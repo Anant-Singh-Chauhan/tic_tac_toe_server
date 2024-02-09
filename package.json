@@ -1,5 +1,11 @@
 {
+  "scripts": {
+    "devStart": "nodemon server.js"
+  },
   "dependencies": {
     "socket.io": "^4.7.4"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.3"
   }
 }
