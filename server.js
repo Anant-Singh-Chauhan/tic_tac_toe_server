@@ -26,6 +26,8 @@ socketServer.on("connection", (socket) => {
 
   socket.on("add-random-player", (playerName) => {
     let playerNumber = randomPlayers.length;
+
+    // first player
     if (playerNumber % 2 == 0) {
       randomPlayers.push({
         userId: socket.id,
@@ -52,6 +54,7 @@ socketServer.on("connection", (socket) => {
 
       // TODO:
       // emit game start package to client here
+      
 
 
       //
@@ -71,3 +74,20 @@ socketServer.on("connection", (socket) => {
     });
   });
 });
+
+
+// function to send player names
+function sendPlayerNames({socket, playersObj}) {
+  socket.emit("emit-players-obj", playersObj);
+}
+
+// function to send room id
+function sendRoomId({socket, roomId}) {
+  socket.emit("emit-room-id", roomId);
+}
+
+// function to send gameTurns
+function sendRoomId({socket, gameTurns}) {
+  socket.emit("emit-gameTurns", gameTurns);
+}
+
