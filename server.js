@@ -32,11 +32,16 @@ socketServer.on("connection", (socket) => {
 
     // first player
     if (playerNumber % 2 == 0) {
+      let rId = Math.ceil(Math.random()*1000000);
+
       randomPlayers.push({
         userId: socket.id,
         playerName: playerName,
-        roomId: socket.id,
+        roomId: rId,
       });
+
+      joinRoom({roomId : rId});
+      
 
       // sendRoomId({ roomId: socket.id });
     } else {
@@ -66,8 +71,6 @@ socketServer.on("connection", (socket) => {
 
       // TODO:
       // emit game start package to client here
-     
-
       // sendRoomId({ roomId: gameRoomId });
       sendGameStartPackage({players : Players, gameRoomId: gameRoomId})
     }
@@ -97,7 +100,7 @@ socketServer.on("connection", (socket) => {
     socket.emit("emit-gameTurns", gameTurns);
   }
 
-  // function to join player 2 to room
+  // function to join player 2 to room of player 1
   function joinRoom({roomId}){
     socket.join(roomId);
   }
@@ -111,7 +114,10 @@ socketServer.on("connection", (socket) => {
       gameRoomId,
     };
 
+    
+    console.log(`emitting to room id + ${gameRoomId}`)
+    console.log(socket.adapter.rooms.get(gameRoomId)?.size);
     // sends gameStartPackage to both players.
-    socket.emit("emit-game-start", gameStartPackage);
+    socketServer.in(gameRoomId).emit("emit-game-start", gameStartPackage);
   }
 });
