@@ -84,6 +84,11 @@ socketServer.on("connection", (socket) => {
     });
   });
 
+  // handle gameturns update
+  socket.on("update-gameturns", (updatedGameTurns, gameRoomId)=>{
+    socketServer.in(gameRoomId).emit("refresh-gameTurns", updatedGameTurns);
+  });
+
   // function to send player names
   function sendPlayerNames({ playersObj }) {
     socket.emit("emit-players-obj", playersObj);
@@ -102,7 +107,9 @@ socketServer.on("connection", (socket) => {
 
   // function to join player 2 to room of player 1
   function joinRoom({roomId}){
-    socket.join(roomId);
+    socket.join(roomId, playerName => {
+      console.log(`${playerName} joined room ${gameRoomId}`);
+    });
   }
 
   // function to send starting game package
@@ -115,8 +122,8 @@ socketServer.on("connection", (socket) => {
     };
 
     
-    console.log(`emitting to room id + ${gameRoomId}`)
-    console.log(socket.adapter.rooms.get(gameRoomId)?.size);
+    // console.log(`emitting to room id + ${gameRoomId}`)
+    // console.log(socket.adapter.rooms.get(gameRoomId)?.size);
     // sends gameStartPackage to both players.
     socketServer.in(gameRoomId).emit("emit-game-start", gameStartPackage);
   }
