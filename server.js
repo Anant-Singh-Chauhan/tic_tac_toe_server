@@ -32,7 +32,7 @@ socketServer.on("connection", (socket) => {
 
     // first player
     if (playerNumber % 2 == 0) {
-      let rId = Math.ceil(Math.random()*1000000);
+      let rId = Math.ceil(Math.random() * 1000000);
 
       randomPlayers.push({
         userId: socket.id,
@@ -40,8 +40,7 @@ socketServer.on("connection", (socket) => {
         roomId: rId,
       });
 
-      joinRoom({roomId : rId});
-      
+      joinRoom({ roomId: rId });
 
       // sendRoomId({ roomId: socket.id });
     } else {
@@ -67,12 +66,12 @@ socketServer.on("connection", (socket) => {
       });
 
       // join player2 to roomId of 1
-      joinRoom({roomId : gameRoomId})
+      joinRoom({ roomId: gameRoomId });
 
       // TODO:
       // emit game start package to client here
       // sendRoomId({ roomId: gameRoomId });
-      sendGameStartPackage({players : Players, gameRoomId: gameRoomId})
+      sendGameStartPackage({ players: Players, gameRoomId: gameRoomId });
     }
 
     console.log(`users length:  ${randomPlayers.length}`);
@@ -85,8 +84,21 @@ socketServer.on("connection", (socket) => {
   });
 
   // handle gameturns update
-  socket.on("update-gameturns", (updatedGameTurns, gameRoomId)=>{
+  socket.on("update-gameturns", (updatedGameTurns, gameRoomId) => {
     socketServer.in(gameRoomId).emit("refresh-gameTurns", updatedGameTurns);
+  });
+
+  // handle player disconnect
+  socket.on("disconnect", () => {
+    let disconnectedPlayer = randomPlayers.find(
+      (randomPlayer) => randomPlayer["userId"] === socket.id
+    );
+    console.log(disconnectedPlayer);
+
+    disconnectedPlayer != undefined &&
+      socketServer
+        .in(disconnectedPlayer["roomId"])
+        .emit("player-disconnected", disconnectedPlayer);
   });
 
   // function to send player names
@@ -106,8 +118,8 @@ socketServer.on("connection", (socket) => {
   }
 
   // function to join player 2 to room of player 1
-  function joinRoom({roomId}){
-    socket.join(roomId, playerName => {
+  function joinRoom({ roomId }) {
+    socket.join(roomId, (playerName) => {
       console.log(`${playerName} joined room ${gameRoomId}`);
     });
   }
@@ -121,7 +133,6 @@ socketServer.on("connection", (socket) => {
       gameRoomId,
     };
 
-    
     // console.log(`emitting to room id + ${gameRoomId}`)
     // console.log(socket.adapter.rooms.get(gameRoomId)?.size);
     // sends gameStartPackage to both players.
