@@ -6,23 +6,56 @@ const socketServer = require("socket.io")(PORT, {
 });
 
 // empty array for storing users
-let users = [];
+let roomPlayers = [];
 let randomPlayers = [];
 
 // on Socket connection
 socketServer.on("connection", (socket) => {
-  // handle "add-remote-player"
-  socket.on("add-remote-player", (playerName) => {
-    users.push({
+  // handle "add-room-player"
+  socket.on("add-room-player", (playerName, roomId) => {
+    // check if valid roomId exists
+    if (roomId != "" && roomId != undefined) {
+      if (!validateRoom(roomId)) return;
+    } else {
+      roomId = Math.ceil(Math.random() * 1000000).toString();
+    }
+
+    // adding players for room plays
+    roomPlayers.push({
       userId: socket.id,
       playerName: playerName,
+      roomId: roomId,
     });
-    console.log(`users length:  ${users.length}`);
 
-    // users.forEach((user) => {
-    //   console.log(`id : ${user["userId"]} player name : ${user["playerName"]}`);
-    // });
+    // join room
+    joinRoom({ roomId: roomId });
+    notifyRoomGame(roomId);
+
+    console.log(`roomPlayers length:  ${roomPlayers.length}`);
+
+    roomPlayers.forEach((user) => {
+      console.log(
+        `id : ${user["userId"]} , player name : ${user["playerName"]} , roomId : ${user["roomId"]}`
+      );
+    });
+
+    let reqdRoomPlayers = roomPlayers.filter(
+      (player) => player["roomId"] == roomId
+    );
+    if (reqdRoomPlayers.length == 2) {
+      //
+
+      // game start logics
+      let Players = {
+        X: reqdRoomPlayers[0].playerName,
+        O: reqdRoomPlayers[1].playerName,
+      };
+
+      sendGameStartPackage({ players: Players, gameRoomId: roomId });
+      notifyRoomGame(roomId);
+    }
   });
+
 
   // handle "add-random-player"
   socket.on("add-random-player", (playerName) => {
@@ -65,7 +98,7 @@ socketServer.on("connection", (socket) => {
       sendGameStartPackage({ players: Players, gameRoomId: gameRoomId });
     }
 
-    console.log(`users length:  ${randomPlayers.length}`);
+    console.log(`remotePlayers length:  ${randomPlayers.length}`);
 
     // randomPlayers.forEach((user) => {
     //   console.log(
@@ -85,6 +118,13 @@ socketServer.on("connection", (socket) => {
       (randomPlayer) => randomPlayer["userId"] === socket.id
     );
 
+    // search roomPlayers if not found in remotePlayers
+    if (disconnectedPlayer == undefined) {
+      disconnectedPlayer = roomPlayers.find(
+        (roomPlayer) => roomPlayer["userId"] === socket.id
+      );
+    }
+
     disconnectedPlayer != undefined && handleDisconnection(disconnectedPlayer);
   });
 
@@ -94,26 +134,37 @@ socketServer.on("connection", (socket) => {
       (randomPlayer) => randomPlayer["userId"] === socket.id
     );
 
+    if (rematchPlayer == undefined) {
+      rematchPlayer = roomPlayers.find(
+        (roomPlayer) => roomPlayer["userId"] === socket.id
+      );
+    }
+
     rematchPlayer != undefined &&
       socketServer
         .in(rematchPlayer["roomId"])
         .emit("rematch-requested-to-client", rematchPlayer);
   });
 
-  // function to send player names
-  function sendPlayerNames({ playersObj }) {
-    socket.emit("emit-players-obj", playersObj);
+  // function to check if room ID exists
+  // in room players and has space
+  function validateRoom(roomId) {
+    let count = roomPlayers.filter(
+      (player) => player["roomId"] == roomId
+    ).length;
+
+    if (count == 0) {
+      socket.emit("invalid-room");
+      return false;
+    } else if (count >= 2) {
+      socket.emit("room-full");
+      return false;
+    } else return true;
   }
 
-  // function to send room id
-  function sendRoomId({ roomId }) {
-    console.log(socket);
-    socket.emit("emit-room-id", roomId);
-  }
-
-  // function to send gameTurns
-  function sendGameTurns({ gameTurns }) {
-    socket.emit("emit-gameTurns", gameTurns);
+  // function to notify about ROOM game
+  function notifyRoomGame(roomId) {
+    socketServer.in(roomId).emit("room-game", roomId);
   }
 
   // function to join player 2 to room of player 1
@@ -125,7 +176,12 @@ socketServer.on("connection", (socket) => {
 
   // function to handle disconnection
   function handleDisconnection(disconnectedPlayer) {
-    randomPlayers = randomPlayers.filter(player => player["userId"] != socket.id);
+    randomPlayers = randomPlayers.filter(
+      (player) => player["userId"] != socket.id
+    );
+
+    roomPlayers = roomPlayers.filter((player) => player["userId"] != socket.id);
+
     socketServer
       .in(disconnectedPlayer["roomId"])
       .emit("player-disconnected", disconnectedPlayer);
@@ -140,8 +196,6 @@ socketServer.on("connection", (socket) => {
       gameRoomId,
     };
 
-    // console.log(`emitting to room id + ${gameRoomId}`)
-    // console.log(socket.adapter.rooms.get(gameRoomId)?.size);
     // sends gameStartPackage to both players.
     socketServer.in(gameRoomId).emit("emit-game-start", gameStartPackage);
   }
