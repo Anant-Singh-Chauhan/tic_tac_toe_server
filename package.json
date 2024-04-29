@@ -1,6 +1,7 @@
 {
   "scripts": {
-    "devStart": "nodemon server.js"
+    "devStart": "nodemon server.js",
+    "prodStart" : "node server.js"
   },
   "dependencies": {
     "socket.io": "^4.7.4"
