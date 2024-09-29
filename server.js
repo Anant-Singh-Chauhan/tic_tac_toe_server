@@ -1,4 +1,12 @@
-const PORT = 3636;
+const dotenv = require("dotenv");
+const path = require("path");
+
+// Load the appropriate .env file based on the environment
+const envFile = `.env.${process.env.NODE_ENV || "development"}`;
+dotenv.config({ path: path.resolve(__dirname, envFile) });
+
+const PORT = process.env.PORT;
+
 const socketServer = require("socket.io")(PORT, {
   cors: {
     origin: "*",
@@ -144,6 +152,13 @@ socketServer.on("connection", (socket) => {
       socketServer
         .in(rematchPlayer["roomId"])
         .emit("rematch-requested-to-client", rematchPlayer);
+  });
+
+  // handle game chat
+  socket.on("send-game-chat", (playerName, message, gameRoomId) => {
+    socketServer
+      .in(gameRoomId)
+      .emit("game-chat-update", { playerName, message });
   });
 
   // function to check if room ID exists

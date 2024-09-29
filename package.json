@@ -1,12 +1,14 @@
 {
   "scripts": {
-    "devStart": "nodemon server.js",
-    "prodStart" : "node server.js"
+    "devStart": "cross-env NODE_ENV=development nodemon server.js",
+    "prodStart": "cross-env NODE_ENV=production node server.js"
   },
   "dependencies": {
+    "dotenv": "^16.4.5",
     "socket.io": "^4.7.4"
   },
   "devDependencies": {
+    "cross-env": "^7.0.3",
     "nodemon": "^3.0.3"
   }
 }
